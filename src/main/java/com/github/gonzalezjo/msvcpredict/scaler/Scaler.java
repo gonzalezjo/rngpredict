@@ -79,18 +79,11 @@ public final class Scaler implements MsvcConstants {
                     scaled[0][r + 1] = (short) Math.ceil((samples[0] + r));
                 }
 
-                // no... this isn't permanent. 
+                // no... this isn't permanent.
                 for (int c = 1; c < scaled.length; c++) {
                     scaled[c] = scaled[c -1].clone();
                     for (int r = 0; r < steps; r++) {
-                        scaled[c][(int) Math.ceil((samples[c - 1] + r))] = 1;
                         scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
-                        scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
-                        int p = (int) Math.ceil((samples[c] + r));
-                        if (p != 0)
-                            scaled[c][(int) Math.ceil((samples[c] + r)) - 1] = 1;
-                        if (p != 32767)
-                            scaled[c][(int) Math.ceil((samples[c] + r)) + 1] = 1;
                     }
                 }
 

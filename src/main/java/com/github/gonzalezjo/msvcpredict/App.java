@@ -1,6 +1,6 @@
 package com.github.gonzalezjo.msvcpredict;
 
-import com.github.gonzalezjo.msvcpredict.solver.Scaler;
+import com.github.gonzalezjo.msvcpredict.scaler.Scaler;
 import com.github.gonzalezjo.msvcpredict.solver.ReferenceSolver;
 import com.github.gonzalezjo.msvcpredict.solver.Solver;
 import com.github.gonzalezjo.msvcpredict.solver.State;

@@ -4,6 +4,8 @@ import com.github.gonzalezjo.msvcpredict.MsvcConstants;
 
 public final class ReferenceSolver implements Solver, MsvcConstants {
     private static final byte DOUBLER = 1;
+    final boolean[] numbers = new boolean[1 + (RAND_MAX)];
+
 
     private int calculateState(final short[] samples) {
         final int sample = samples[0] << SHIFTS;
@@ -21,7 +23,7 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
             solution = M * solution + C & MODULUS;
             break;
         }
-        
+
         return (int) solution;
     }
 
@@ -29,8 +31,10 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
     private int solveMultipleValueSet(final short[][] values) {
         final short[] subsamples = values[0];
 
-        for (short potentialValue : subsamples) {
-            final long base = potentialValue << SHIFTS;
+        short potentialValue;
+        for (int i = 1; i <= values[0][0]; i++) {
+            potentialValue = subsamples[i];
+            final long base = potentialValue << SHIFTS; // inline?
             for (int lsb = 0; lsb <= (int) RAND_MAX << DOUBLER; lsb++) {
                 long validState = getValidState(base + lsb, values);
                 if (validState != -1) {
@@ -42,23 +46,20 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
         return -1;
     }
 
-    private long getValidState(long possibleState, short[][] values) {
-        final long state = possibleState;
-        final boolean[] numbers = new boolean[1 + (RAND_MAX)];
+    private long getValidState(final long possibleState, final short[][] values) {
         long solution = -1;
+        long currentState = possibleState;
 
         Exit: for (int i = 1; i < values.length; i++) {
-            possibleState = state;
-            for (short v : values[i]) {
-                numbers[v] = true;
-            }
-            for (int k = 0; k <= values.length; k++) {
-                solution = possibleState;
-                if (!numbers[(int) ((possibleState = (M * possibleState + C & MODULUS)) >> SHIFTS)]) {
+            currentState = possibleState;
+            for (int k = 0; k <= values[0][values[0][0] + 1]; k++) {
+                solution = currentState;
+                if ((values[i][(int) ((currentState = (M * currentState + C & MODULUS)) >> SHIFTS)]) == 0) {
                     solution = -1;
                     continue Exit;
                 }
             }
+            return solution;
         }
 
         return solution;
@@ -69,7 +70,7 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
         final int solution;
         final long time = System.nanoTime();
 
-        if (samples.length == 1) {
+        if (samples[0].length - 1 != RAND_MAX) {
             System.out.println("Solving 1D set of length: " + samples[0].length);
             solution = calculateState(samples[0]);
         } else {

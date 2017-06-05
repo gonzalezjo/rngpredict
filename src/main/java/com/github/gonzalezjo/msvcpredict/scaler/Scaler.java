@@ -1,4 +1,4 @@
-package com.github.gonzalezjo.msvcpredict.solver;
+package com.github.gonzalezjo.msvcpredict.scaler;
 
 import com.github.gonzalezjo.msvcpredict.MsvcConstants;
 
@@ -66,20 +66,34 @@ public final class Scaler implements MsvcConstants {
                 }
                 return scaled;
             case MATH_RANDOM_N:
-                // likely source of error for 85,32,46,28,99,30,74,57,20,77,84,40,51,90,3,100 regression
-                // perhaps i should be going through entire stepping. check study version.
-                // scaled = new short[samples.length][samples.length]; // old
                 final double steps = RAND_MAX / maximum;
-                scaled = new short[samples.length][(int) steps + 1];
+                scaled = new short[samples.length][RAND_MAX + 1];
+                // scaled = new short[samples.length][(int) steps + 1];
                 for (int i = 0; i < samples.length; i++) {
                     samples[i] = (samples[i] - 1) * RAND_MAX / maximum; // steps?
-                    // is changing samples bad? dunno, but this works.
                 }
-                for (int c = 0; c < samples.length; c++) {
+
+                scaled[0][0] = (short) (steps + 1);
+                scaled[0][(int) (steps + 2)] = (short) samples.length;
+                for (int r = 0; r < steps; r++) {
+                    scaled[0][r + 1] = (short) Math.ceil((samples[0] + r));
+                }
+
+                // no... this isn't permanent. 
+                for (int c = 1; c < scaled.length; c++) {
+                    scaled[c] = scaled[c -1].clone();
                     for (int r = 0; r < steps; r++) {
-                        scaled[c][r] = (short) Math.ceil((samples[c] + r));
+                        scaled[c][(int) Math.ceil((samples[c - 1] + r))] = 1;
+                        scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
+                        scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
+                        int p = (int) Math.ceil((samples[c] + r));
+                        if (p != 0)
+                            scaled[c][(int) Math.ceil((samples[c] + r)) - 1] = 1;
+                        if (p != 32767)
+                            scaled[c][(int) Math.ceil((samples[c] + r)) + 1] = 1;
                     }
                 }
+
                 return scaled;
             case RAND:
                 scaled = new short[1][samples.length];

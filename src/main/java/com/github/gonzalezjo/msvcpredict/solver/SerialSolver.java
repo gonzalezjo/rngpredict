@@ -48,62 +48,43 @@ public final class SerialSolver implements Solver, MsvcConstants {
             }
             System.out.println(i);
         }
-//        System.out.println("Returning no answer (-1)");
         return -1;
     }
 
-//    private long getValidState(long possibleState, short[][] values) {
-//        final boolean[] numbers = new boolean[1 + (RAND_MAX)];
-//        for (short[] value : values) {
-//            for (short i : value) {
-//                numbers[i] = true;
-//            }
-//        }
-//        for (int i = 1; i < values.length; i++) {
-//            for (int k = 0; k < values.length; k++) {
-//                if (numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
-//                    possibleState = (M * possibleState + C) & MODULUS;
-//                    if (k == values.length - 1) {
-//                        return possibleState;
-//                    }
-//                } else {
-//                    return -1;
-//                }
-//            }
-//        }
-//
-//        return possibleState;
-//    }
-
     private long getValidState(long possibleState, short[][] values) {
+        final long state = possibleState;
         final boolean[] numbers = new boolean[1 + (RAND_MAX)];
-        for (short[] value : values) {
-            for (short i : value) {
-                numbers[i] = true;
-            }
-        }
+        // bitSet.clear();
+        // for (int i = 0; i < numbers.length; i++)
+        //     if (!numbers[i])
+        //         System.out.println(i);
         // bitSet.clear();
         // for (short[] value : values) {
         //     for (short i : value) {
         //         bitSet.set(i);
         //     }
         // }
-        for (int i = 1; i < values.length; i++) {
-            for (int k = 0; k < values.length; k++) {
+        for (int i = 0; i < values.length; i++) { // i = 1
+            possibleState = state;
+            for (short v : values[i]) {
+                numbers[v] = true;
+                // bitSet.set(v);
+            }
+            for (int k = 0; k <= values.length; k++) {
                 if (numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
                 // if (bitSet.get((int) ((M * possibleState + C & MODULUS) >> SHIFTS))) {
-                    possibleState = (M * possibleState + C) & MODULUS;
-                    if (k == values.length - 1) {
+                    if (k == values.length) {
                         System.out.println("Returning a valid state. K: " + k + " I: " + i);
                         return possibleState;
                     }
+                    possibleState = (M * possibleState + C) & MODULUS;
                 } else {
-                    return -1;
+                    break;
                 }
             }
         }
 
-        return possibleState;
+        return -1;
     }
 
     @Override
@@ -112,8 +93,7 @@ public final class SerialSolver implements Solver, MsvcConstants {
         final long time = System.nanoTime();
 
         if (samples.length == 1) {
-            System.out.println(String.format(
-                    "Solving 1D set of length: %d", samples[0].length));
+            System.out.println("Solving 1D set of length: %d" + samples[0].length);
             solution = calculateState(samples[0]);
         } else {
             System.out.println(String.format(
@@ -121,10 +101,10 @@ public final class SerialSolver implements Solver, MsvcConstants {
             solution = solveMultipleValueSet(samples);
         }
 
+        System.out.println("Total time: " + (System.nanoTime() - time));
+
         if (solution == -1)
             throw new RuntimeException("No solution found.");
-
-        System.out.println(System.nanoTime() - time);
 
         return new State(solution);
     }

@@ -62,6 +62,7 @@ public final class Scaler implements MsvcConstants {
                 scaled = new short[1][samples.length];
                 for (int i = 0; i < samples.length; i++) { // changed sorted.length to samples.length
                     scaled[0][i] = (short) (samples[i] * RAND_MAX + ROUND_UP);
+                    // scaled[0][i] = (short) Math.ceil(samples[i] * RAND_MAX);
                 }
                 return scaled;
             case MATH_RANDOM_N:

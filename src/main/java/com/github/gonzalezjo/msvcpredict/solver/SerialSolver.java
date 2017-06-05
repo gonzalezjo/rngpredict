@@ -11,13 +11,13 @@ public final class SerialSolver implements Solver, MsvcConstants {
 
     private int calculateState(final short[] samples) {
         final int sample = samples[0] << SHIFTS;
-        long solution = 0;
+        long solution = 0; // -1 maybe?
 
         Exit: for (int i = 0; i <= (int) RAND_MAX << DOUBLER; i++) {
             solution = sample + i;
             for (int p = 1; p < samples.length; p++) {
                 if (samples[p] != (M * solution + C & MODULUS) >> SHIFTS) { // recalculating this every time. unnecessary?
-                    solution = 0;
+                    solution = 0; // -- 1 maybe?
                     continue Exit;
                 }
                 solution = M * solution + C & MODULUS;
@@ -34,6 +34,8 @@ public final class SerialSolver implements Solver, MsvcConstants {
         int i = 0;
         for (short potentialValue : subsamples) {
             i++;
+            // if (i > 20)
+            //     continue;
             // if (i < 52)
             //     continue;
             if (i < 246)
@@ -54,7 +56,7 @@ public final class SerialSolver implements Solver, MsvcConstants {
     private long getValidState(long possibleState, short[][] values) {
         final long state = possibleState;
         final boolean[] numbers = new boolean[1 + (RAND_MAX)];
-        // bitSet.clear();
+        bitSet.clear();
         // for (int i = 0; i < numbers.length; i++)
         //     if (!numbers[i])
         //         System.out.println(i);
@@ -68,23 +70,23 @@ public final class SerialSolver implements Solver, MsvcConstants {
             possibleState = state;
             for (short v : values[i]) {
                 numbers[v] = true;
-                // bitSet.set(v);
+                bitSet.set(v);
             }
             for (int k = 0; k <= values.length; k++) {
-                if (numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
-                // if (bitSet.get((int) ((M * possibleState + C & MODULUS) >> SHIFTS))) {
+                if (!numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
+                    break;
+                } else {
                     if (k == values.length) {
                         System.out.println("Returning a valid state. K: " + k + " I: " + i);
                         return possibleState;
                     }
                     possibleState = (M * possibleState + C) & MODULUS;
-                } else {
-                    break;
                 }
             }
         }
 
         return -1;
+        // return possibleState;
     }
 
     @Override

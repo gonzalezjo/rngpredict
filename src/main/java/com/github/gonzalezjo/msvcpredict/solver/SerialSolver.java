@@ -34,10 +34,10 @@ public final class SerialSolver implements Solver, MsvcConstants {
         int i = 0;
         for (short potentialValue : subsamples) {
             i++;
-            if (i < 52)
-                continue;
-            // if (i < 246)
+            // if (i < 52)
             //     continue;
+            if (i < 246)
+                continue;
             final long base = potentialValue << SHIFTS;
             for (int lsb = 0; lsb <= (int) RAND_MAX << DOUBLER; lsb++) {
                 long validState = getValidState(base + lsb, values);
@@ -76,22 +76,22 @@ public final class SerialSolver implements Solver, MsvcConstants {
 //    }
 
     private long getValidState(long possibleState, short[][] values) {
-        // final boolean[] numbers = new boolean[1 + (RAND_MAX)];
-        // for (short[] value : values) {
-        //     for (short i : value) {
-        //         numbers[i] = true;
-        //     }
-        // }
-        bitSet.clear();
+        final boolean[] numbers = new boolean[1 + (RAND_MAX)];
         for (short[] value : values) {
             for (short i : value) {
-                bitSet.set(i);
+                numbers[i] = true;
             }
         }
+        // bitSet.clear();
+        // for (short[] value : values) {
+        //     for (short i : value) {
+        //         bitSet.set(i);
+        //     }
+        // }
         for (int i = 1; i < values.length; i++) {
             for (int k = 0; k < values.length; k++) {
-                // if (numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
-                if (bitSet.get((int) ((M * possibleState + C & MODULUS) >> SHIFTS))) {
+                if (numbers[(int) ((M * possibleState + C & MODULUS) >> SHIFTS)]) {
+                // if (bitSet.get((int) ((M * possibleState + C & MODULUS) >> SHIFTS))) {
                     possibleState = (M * possibleState + C) & MODULUS;
                     if (k == values.length - 1) {
                         System.out.println("Returning a valid state. K: " + k + " I: " + i);
@@ -112,8 +112,12 @@ public final class SerialSolver implements Solver, MsvcConstants {
         final long time = System.nanoTime();
 
         if (samples.length == 1) {
+            System.out.println(String.format(
+                    "Solving 1D set of length: %d", samples[0].length));
             solution = calculateState(samples[0]);
         } else {
+            System.out.println(String.format(
+                    "Solving 2D set of size: %d x %d", samples.length, samples[0].length));
             solution = solveMultipleValueSet(samples);
         }
 

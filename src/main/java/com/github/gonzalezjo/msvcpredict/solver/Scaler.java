@@ -2,7 +2,6 @@ package com.github.gonzalezjo.msvcpredict.solver;
 
 import com.github.gonzalezjo.msvcpredict.MsvcConstants;
 
-import javax.naming.OperationNotSupportedException;
 import java.util.Arrays;
 
 public final class Scaler implements MsvcConstants {
@@ -29,18 +28,20 @@ public final class Scaler implements MsvcConstants {
             length = (byte) Math.ceil(
                     log2ceil(MODULUS) / (log2ceil(MODULUS) - SHIFTS));
             System.out.println("Attempting math.random() mode.");
-        } else if (smallest > (RAND_MAX >> MSVC_THRESHOLD)) {
-            maximum = RAND_MAX;
+        } else if (largest <= (RAND_MAX >> MSVC_THRESHOLD)) {
+            maximum = largest;
             mode = InputType.MATH_RANDOM_N;
+            // length = 16;
+            length = (byte) samples.length;
+            // length = (byte) (MSVC_THRESHOLD + Math.ceil(
+            //         log2ceil(MODULUS) / (log2floor(MODULUS) - (31 - log2ceil(maximum)))));
+            System.out.println(String.format("Attempting math.random(n) mode, where n is %.0f.", maximum));
+        } else {
+            maximum = RAND_MAX;
+            mode = InputType.RAND;
             length = (byte) Math.ceil(
                     log2ceil(MODULUS) / (log2ceil(MODULUS) - SHIFTS));
             System.out.println("Attempting rand() mode (deprecated).");
-        } else {
-            maximum = largest;
-            mode = InputType.RAND;
-            length = (byte) (MSVC_THRESHOLD + Math.ceil(
-                    log2ceil(MODULUS) / (log2floor(MODULUS) - (31 - log2ceil(maximum)))));
-            System.out.println(String.format("Attempting math.random(n) mode, where n is %.0f.", maximum));
         }
 
         // https://forum.wordreference.com/threads/too-few-too-little.2344119/
@@ -49,57 +50,64 @@ public final class Scaler implements MsvcConstants {
                     "Too few samples provided.");
         }
 
-        this.samples = Arrays.copyOfRange(samples, samples.length - length, samples.length);
+        this.samples = Arrays.copyOfRange(
+                samples, samples.length - length,
+                samples.length);
     }
 
-    public short[][] scaled() throws OperationNotSupportedException {
+    public short[][] processable() {
         final short[][] scaled;
         switch (mode) {
-            case RAND:
-                scaled = new short[1][samples.length];
-                for (int i = 0; i < samples.length; i++) {
-                    scaled[0][i] = (short) samples[i];
-                }
-                break;
             case MATH_RANDOM:
                 scaled = new short[1][samples.length];
                 for (int i = 0; i < samples.length; i++) { // changed sorted.length to samples.length
                     scaled[0][i] = (short) (samples[i] * RAND_MAX + ROUND_UP);
                 }
-                break;
+                return scaled;
             case MATH_RANDOM_N:
-                scaled = new short[1][samples.length];
+                // likely source of error for 85,32,46,28,99,30,74,57,20,77,84,40,51,90,3,100 regression
+                // perhaps i should be going through entire stepping. check study version.
+                // scaled = new short[samples.length][samples.length]; // old
+                final double steps = RAND_MAX / maximum;
+                scaled = new short[samples.length][(int) steps + 1];
                 for (int i = 0; i < samples.length; i++) {
-                    samples[i] = (samples[i] - 1) * RAND_MAX / maximum;
+                    samples[i] = (samples[i] - 1) * RAND_MAX / maximum; // steps?
+                    // is changing samples bad? dunno, but this works.
                 }
                 for (int c = 0; c < samples.length; c++) {
-                    for (int r = 0; r < scaled[0].length; r++) {
+                    for (int r = 0; r < steps; r++) {
                         scaled[c][r] = (short) Math.ceil((samples[c] + r));
                     }
                 }
-                break;
+                return scaled;
+            case RAND:
+                scaled = new short[1][samples.length];
+                for (int i = 0; i < samples.length; i++) {
+                    scaled[0][i] = (short) samples[i];
+                }
+                return scaled;
             default:
-                scaled = null;
-                throw new OperationNotSupportedException("Mode supplied is unsupported.");
+                return new short[][] {{-1}};
         }
-        return scaled;
     }
 
-    public void setToCurrentScale(final double[] samples) {
+    public double[] originalScale(final double[] samples) {
+        final double[] output = samples.clone();
         switch (mode) {
-            case RAND:
-                return;
             case MATH_RANDOM:
-                for (int i = 0; i < samples.length; i++) {
-                    samples[i] = samples[i] / RAND_MAX;
+                for (int i = 0; i < output.length; i++) {
+                    output[i] = output[i] / RAND_MAX;
                 }
-                return;
+                break;
             case MATH_RANDOM_N:
-                for (int i = 0; i < samples.length; i++) {
-                    samples[i] = Math.floor(samples[i] / (RAND_MAX / maximum) + 1);
+                for (int i = 0; i < output.length; i++) {
+                    output[i] = Math.floor(output[i] / (RAND_MAX / maximum) + 1);
                 }
-                return;
+                break;
+            case RAND:
+                break;
         }
+        return output;
     }
 
     private double log2ceil(double n) { // for calculating exactly how much work we can skip
@@ -110,5 +118,5 @@ public final class Scaler implements MsvcConstants {
         return Math.floor(Math.log(n) / Math.log(2));
     }
 
-    private enum InputType {RAND, MATH_RANDOM, MATH_RANDOM_N}
+    private enum InputType {MATH_RANDOM, MATH_RANDOM_N, RAND}
 }

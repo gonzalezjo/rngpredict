@@ -31,7 +31,6 @@ public final class Scaler implements MsvcConstants {
         } else if (largest <= (RAND_MAX >> MSVC_THRESHOLD)) {
             maximum = largest;
             mode = InputType.MATH_RANDOM_N;
-            // length = 16;
             length = (byte) samples.length;
             // length = (byte) (MSVC_THRESHOLD + Math.ceil(
             //         log2ceil(MODULUS) / (log2floor(MODULUS) - (31 - log2ceil(maximum)))));
@@ -44,7 +43,6 @@ public final class Scaler implements MsvcConstants {
             System.out.println("Attempting rand() mode (deprecated).");
         }
 
-        // https://forum.wordreference.com/threads/too-few-too-little.2344119/
         if (samples.length < length) {
             throw new IllegalArgumentException(
                     "Too few samples provided.");
@@ -60,33 +58,28 @@ public final class Scaler implements MsvcConstants {
         switch (mode) {
             case MATH_RANDOM:
                 scaled = new short[1][samples.length];
-                for (int i = 0; i < samples.length; i++) { // changed sorted.length to samples.length
+                for (int i = 0; i < samples.length; i++) {
                     scaled[0][i] = (short) (samples[i] * RAND_MAX + ROUND_UP);
-                    // scaled[0][i] = (short) Math.ceil(samples[i] * RAND_MAX);
                 }
                 return scaled;
             case MATH_RANDOM_N:
                 final double steps = RAND_MAX / maximum;
                 scaled = new short[samples.length][RAND_MAX + 1];
-                // scaled = new short[samples.length][(int) steps + 1];
+
                 for (int i = 0; i < samples.length; i++) {
                     samples[i] = (samples[i] - 1) * RAND_MAX / maximum; // steps?
                 }
-
                 scaled[0][0] = (short) (steps + 1);
                 scaled[0][(int) (steps + 2)] = (short) samples.length;
                 for (int r = 0; r < steps; r++) {
                     scaled[0][r + 1] = (short) Math.ceil((samples[0] + r));
                 }
-
-                // no... this isn't permanent.
                 for (int c = 1; c < scaled.length; c++) {
                     scaled[c] = scaled[c -1].clone();
                     for (int r = 0; r < steps; r++) {
                         scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
                     }
                 }
-
                 return scaled;
             case RAND:
                 scaled = new short[1][samples.length];

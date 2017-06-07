@@ -1,7 +1,7 @@
 package com.github.gonzalezjo.msvcpredict;
 
 import com.github.gonzalezjo.msvcpredict.scaler.Scaler;
-import com.github.gonzalezjo.msvcpredict.solver.ReferenceSolver;
+import com.github.gonzalezjo.msvcpredict.solver.ParallelSolver;
 import com.github.gonzalezjo.msvcpredict.solver.Solver;
 import com.github.gonzalezjo.msvcpredict.solver.State;
 
@@ -19,7 +19,7 @@ final class App {
     private static double[] nextNumbers(final double[] samples,
                                         final int amount) {
         final Scaler scaler = new Scaler(samples);
-        final Solver solver = new ReferenceSolver();
+        final Solver solver = new ParallelSolver();
         final short[][] scaled = scaler.processable(); // would like to make an interface, then allow custom inputs and scalers
 
         if (scaled[0][0] == -1) {

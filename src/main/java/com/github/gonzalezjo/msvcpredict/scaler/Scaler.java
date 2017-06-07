@@ -7,7 +7,7 @@ import java.util.Arrays;
 public final class Scaler implements MsvcConstants {
     private static final byte MSVC_THRESHOLD = 3;
     private static final double ROUND_UP = 0.5;
-    private final byte length;
+    private final short length;
     private final double maximum;
     private final double[] samples;
     private final InputType mode;
@@ -25,20 +25,20 @@ public final class Scaler implements MsvcConstants {
         if (smallest >= 0 && largest < 1) {
             maximum = 1;
             mode = InputType.MATH_RANDOM;
-            length = (byte) Math.ceil(
+            length = (short) Math.ceil(
                     log2ceil(MODULUS) / (log2ceil(MODULUS) - SHIFTS));
             System.out.println("Attempting math.random() mode.");
         } else if (largest <= (RAND_MAX >> MSVC_THRESHOLD)) {
             maximum = largest;
             mode = InputType.MATH_RANDOM_N;
-            length = (byte) samples.length;
+            length = (short) samples.length;
             // length = (byte) (MSVC_THRESHOLD + Math.ceil(
             //         log2ceil(MODULUS) / (log2floor(MODULUS) - (31 - log2ceil(maximum)))));
             System.out.println(String.format("Attempting math.random(n) mode, where n is %.0f.", maximum));
         } else {
             maximum = RAND_MAX;
             mode = InputType.RAND;
-            length = (byte) Math.ceil(
+            length = (short) Math.ceil(
                     log2ceil(MODULUS) / (log2ceil(MODULUS) - SHIFTS));
             System.out.println("Attempting rand() mode (deprecated).");
         }

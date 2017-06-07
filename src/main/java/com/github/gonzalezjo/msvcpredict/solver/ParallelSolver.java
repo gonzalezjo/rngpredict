@@ -2,49 +2,40 @@ package com.github.gonzalezjo.msvcpredict.solver;
 
 import com.github.gonzalezjo.msvcpredict.MsvcConstants;
 
-public final class ReferenceSolver implements Solver, MsvcConstants {
-    private int solveSingleSet(final short[] samples) {
-        final int sample = samples[0] << SHIFTS;
-        long solution = -1;
+import java.util.stream.IntStream;
 
-        Exit: for (int i = 0; i <= (int) RAND_MAX << DOUBLER; i++) {
-            solution = sample + i;
-            for (int p = 1; p < samples.length; p++) {
-                if (samples[p] != (M * solution + C & MODULUS) >> SHIFTS) {
-                    solution = -1;
-                    continue Exit;
-                }
-                solution = M * solution + C & MODULUS;
-            }
-            solution = M * solution + C & MODULUS;
-            break;
-        }
-
-        return (int) solution;
-    }
-
-
+public class ParallelSolver implements Solver, MsvcConstants {
     private int solveMultiSet(final short[][] values) {
         final short[] subsamples = values[0];
 
-        short potentialValue;
-        for (int i = 1; i <= values[0][0]; i++) {
-            potentialValue = subsamples[i];
-            final long base = potentialValue << SHIFTS; // inline?
-            for (int lsb = 0; lsb <= (int) RAND_MAX << DOUBLER; lsb++) {
-                long validState = getValidState(base + lsb, values);
-                if (validState != -1) {
-                    return (int) validState;
-                }
-            }
-        }
-
-        return -1;
+        return IntStream.range(1, values[0][0])
+                .parallel()
+                .flatMap(i -> {
+                    short potentialValue = subsamples[i];
+                    final long base = potentialValue << SHIFTS; // inline?
+                    for (int lsb = 0; lsb <= (int) RAND_MAX << DOUBLER; lsb++) {
+                        long validState = getValidState(base + lsb, values);
+                        if (validState != -1) {
+                            return IntStream.of((int) validState);
+                        }
+                    }
+                    return IntStream.empty();
+                })
+                .findAny()
+                .orElse(-1);
     }
 
     private long getValidState(final long possibleState, final short[][] values) {
         long solution = -1;
         long currentState = possibleState;
+        final int skipVar = values.length - 1;
+
+        currentState = possibleState; // skip. 50x speed increase if this works right : ^ )
+        for (int k = 0; k <= values[0][values[0][0] + 1]; k++) {
+            if ((values[skipVar][(int) ((currentState = (M * currentState + C & MODULUS)) >> SHIFTS)]) == 0) {
+                return -1;
+            }
+        }
 
         Exit: for (int i = 1; i < values.length; i++) {
             currentState = possibleState;
@@ -68,7 +59,7 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
 
         if (samples[0].length - 1 != RAND_MAX) {
             System.out.println("Solving 1D set of length: " + samples[0].length);
-            solution = solveSingleSet(samples[0]);
+            return new ReferenceSolver().solve(samples);
         } else {
             System.out.println(String.format(
                     "Solving 2D set of size: %d x %d", samples.length, samples[0].length));
@@ -82,5 +73,4 @@ public final class ReferenceSolver implements Solver, MsvcConstants {
 
         return new State(solution);
     }
-
 }

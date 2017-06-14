@@ -1,26 +1,30 @@
-package com.github.gonzalezjo.msvcpredict.scaler;
+package com.github.gonzalezjo.rngpredict.client.solver.scaler;
 
-import com.github.gonzalezjo.msvcpredict.MsvcConstants;
+import com.github.gonzalezjo.rngpredict.client.MsvcConstants;
 
 import java.util.Arrays;
 
-public final class Scaler implements MsvcConstants {
+public final class LuaMsvcScaler implements MsvcConstants, Scaler {
     private static final byte MSVC_THRESHOLD = 3;
     private static final double ROUND_UP = 0.5;
     private final short length;
     private final double maximum;
     private final double[] samples;
     private final InputType mode;
-    public Scaler(final double[] samples) {
-        final double[] sorted = Arrays.stream(samples).sorted().toArray();
+
+    public LuaMsvcScaler(final double[] inputs) {
+        final double[] sorted = Arrays.stream(inputs).sorted().toArray();
         final double smallest = sorted[0], largest = sorted[sorted.length - 1];
 
-        if (smallest < 0)
+        if (smallest < 0) {
             throw new UnsupportedOperationException(
                     "Cannot handle negative numbers.");
-        if (largest == 0)
+        }
+
+        if (largest == 0) {
             throw new UnsupportedOperationException(
                     "Cannot handle largest value of 0.");
+        }
 
         if (smallest >= 0 && largest < 1) {
             maximum = 1;
@@ -31,7 +35,7 @@ public final class Scaler implements MsvcConstants {
         } else if (largest <= (RAND_MAX >> MSVC_THRESHOLD)) {
             maximum = largest;
             mode = InputType.MATH_RANDOM_N;
-            length = (short) samples.length;
+            length = (short) inputs.length;
             // length = (byte) (MSVC_THRESHOLD + Math.ceil(
             //         log2ceil(MODULUS) / (log2floor(MODULUS) - (31 - log2ceil(maximum)))));
             System.out.println(String.format("Attempting math.random(n) mode, where n is %.0f.", maximum));
@@ -43,14 +47,14 @@ public final class Scaler implements MsvcConstants {
             System.out.println("Attempting rand() mode (deprecated).");
         }
 
-        if (samples.length < length) {
+        if (inputs.length < length) {
             throw new IllegalArgumentException(
                     "Too few samples provided.");
         }
 
         this.samples = Arrays.copyOfRange(
-                samples, samples.length - length,
-                samples.length);
+                inputs, inputs.length - length,
+                inputs.length);
     }
 
     public short[][] processable() {
@@ -75,7 +79,7 @@ public final class Scaler implements MsvcConstants {
                     scaled[0][r + 1] = (short) Math.ceil((samples[0] + r));
                 }
                 for (int c = 1; c < scaled.length; c++) {
-                    scaled[c] = scaled[c -1].clone();
+                    scaled[c] = scaled[c - 1].clone();
                     for (int r = 0; r < steps; r++) {
                         scaled[c][(int) Math.ceil((samples[c] + r))] = 1;
                     }
@@ -92,8 +96,8 @@ public final class Scaler implements MsvcConstants {
         }
     }
 
-    public double[] originalScale(final double[] samples) {
-        final double[] output = samples.clone();
+    public double[] originalScale(final double[] inputs) {
+        final double[] output = inputs.clone();
         switch (mode) {
             case MATH_RANDOM:
                 for (int i = 0; i < output.length; i++) {
@@ -111,13 +115,13 @@ public final class Scaler implements MsvcConstants {
         return output;
     }
 
-    private double log2ceil(double n) { // for calculating exactly how much work we can skip
+    private double log2ceil(final double n) { // for calculating exactly how much work we can skip
         return Math.ceil(Math.log(n) / Math.log(2));
     }
 
-    private double log2floor(double n) {
+    private double log2floor(final double n) {
         return Math.floor(Math.log(n) / Math.log(2));
     }
 
-    private enum InputType {MATH_RANDOM, MATH_RANDOM_N, RAND}
+    private enum InputType { MATH_RANDOM, MATH_RANDOM_N, RAND }
 }

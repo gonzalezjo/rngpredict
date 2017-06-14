@@ -1,4 +1,4 @@
-package com.github.gonzalezjo.msvcpredict;
+package com.github.gonzalezjo.rngpredict.client;
 
 public interface MsvcConstants {
     byte SHIFTS = 16; // 31 - log2ceil(RAND_MAX)

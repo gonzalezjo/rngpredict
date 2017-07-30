@@ -154,3 +154,41 @@ local function main(context)
   end
 end
 ```
+
+
+A basic version in C is also fairly high performance: 
+```c
+#include <stdio.h>
+#define A 214013
+#define C 2531011
+#define M 0x7fffffff
+#define SHIFTS 16 
+
+inline const int checkState(const int outputs[], const int outputSize, int state) { 
+    for (int i = 1; i < outputSize / sizeof(outputs[0]); i++)
+        if ((A * state + C & M) >> SHIFTS == outputs[i])
+            state = (A * state + C) & M;
+        else 
+            return -1;
+
+    return state;
+}
+
+const int getState(const int outputs[], const int outputSize) { 
+    const int base = outputs[0] << SHIFTS;
+    
+    for (int offset = 2 << 15; offset >= 0; offset--) { 
+        const int state = checkState(outputs, outputSize, base + offset);
+        if (state != -1)
+            return state;
+    }
+
+    return -1;
+}
+
+int main() {
+    const int outputs[] = { 4397, 27865, 15742, 29251, 10948, 23559, 23132, 434 };
+    const int state = getState(outputs, sizeof(outputs));
+    printf("State: %d\nAfter: %d\n", state, (A * state + C & M) >> SHIFTS);
+}
+```
